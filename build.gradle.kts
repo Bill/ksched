@@ -18,10 +18,10 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0-M2")
 
-    // I've got "tests" in my "main" source set
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.0-M2-SNAPSHOT")
-
-    testImplementation("junit", "junit", "4.12")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.0-M2-SNAPSHOT")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.5.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.4.2")
+    testImplementation("org.assertj:assertj-core:3.11.1")
 }
 
 configure<JavaPluginConvention> {
