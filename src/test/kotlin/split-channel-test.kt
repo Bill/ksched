@@ -18,54 +18,44 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.stream.Collectors
 import java.util.stream.Stream
+import kotlin.coroutines.CoroutineContext
 
 typealias Receivers = Pair<ReceiveChannel<List<Int>>,ReceiveChannel<List<Int>>>
 
 class SplitChannelTest {
 
-    class SplitterSubscriber(
-            val name: String,
+    fun CoroutineScope.splitterSubscriber(
+            name: String,
             period: Long,
             timeUnit: TimeUnit,
-            val source: ReceiveChannel<Int>,
-            coroutineScope: CoroutineScope,
-            val seenChannel: SendChannel<List<Int>>) {
+            source: ReceiveChannel<Int>,
+            seenChannel: SendChannel<List<Int>>): Job = launch {
+
+        fun log(s: String) {
+            println("$name $s (thread: ${Thread.currentThread().id})")
+        }
 
         val periodMillis: Long = timeUnit.toMillis(period)
 
-        init {
-            coroutineScope.doSteps()
-        }
+        val seen: MutableList<Int> = ArrayList()
 
-        /*
-         Periodically consume elements from upstream
-         */
-        private fun CoroutineScope.doSteps() = launch {
+        delay(periodMillis)
 
-            val seen: MutableList<Int> = ArrayList()
+        log("requesting 1")
+
+        for (item in source) {
+
+            log("got item: $item")
+
+            seen.add(item)
 
             delay(periodMillis)
 
             log("requesting 1")
-
-            for (item in source) {
-
-                log("got item: $item")
-
-                seen.add(item)
-
-                delay(periodMillis)
-
-                log("requesting 1")
-            }
-            seenChannel.send(seen)
-
-            log("complete.")
         }
+        seenChannel.send(seen)
 
-        private fun log(s: String) {
-            println("$name $s (thread: ${Thread.currentThread().id})")
-        }
+        log("complete.")
     }
 
     @Disabled
@@ -162,20 +152,18 @@ class SplitChannelTest {
         return Pair(Channel<List<Int>>(1), Channel<List<Int>>(1))
                 .also {
 
-                    SplitterSubscriber(
+                    splitterSubscriber(
                             "Fast!",
                             fastPeriod,
                             fastTimeUnit,
                             topic.openSubscription(),
-                            this,
                             it.first)
 
-                    SplitterSubscriber(
+                    splitterSubscriber(
                             "slow ",
                             slowPeriod,
                             slowTimeUnit,
                             topic.openSubscription(),
-                            this,
                             it.second)
 
                     producer(topic)
