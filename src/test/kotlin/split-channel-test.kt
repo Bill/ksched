@@ -19,6 +19,8 @@ import java.util.concurrent.TimeUnit.SECONDS
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
+typealias Receivers = Pair<ReceiveChannel<List<Int>>,ReceiveChannel<List<Int>>>
+
 class SplitChannelTest {
 
     class SplitterSubscriber(
@@ -56,6 +58,7 @@ class SplitChannelTest {
                 log("requesting 1")
             }
             seenChannel.send(seen)
+
             log("complete.")
         }
 
@@ -110,7 +113,7 @@ class SplitChannelTest {
 
     }
 
-    private fun validate(subscribers: Pair<ReceiveChannel<List<Int>>,ReceiveChannel<List<Int>>>) {
+    private fun validate(subscribers: Receivers) {
         val(fast, slow) = subscribers
 
         val fastResult = fast.poll()
@@ -138,7 +141,7 @@ class SplitChannelTest {
             fastTimeUnit: TimeUnit,
             slowPeriod: Long,
             slowTimeUnit: TimeUnit):
-            Pair<ReceiveChannel<List<Int>>,ReceiveChannel<List<Int>>> {
+            Receivers {
 
         /*
 
