@@ -31,7 +31,6 @@ class SplitChannelTest {
             coroutineScope: CoroutineScope,
             val seenChannel: SendChannel<List<Int>>) {
 
-        val seen: MutableList<Int> = ArrayList()
         val periodMillis: Long = timeUnit.toMillis(period)
 
         init {
@@ -42,6 +41,8 @@ class SplitChannelTest {
          Periodically consume elements from upstream
          */
         private fun CoroutineScope.doSteps() = launch {
+
+            val seen: MutableList<Int> = ArrayList()
 
             delay(periodMillis)
 
