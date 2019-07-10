@@ -1,7 +1,5 @@
-import javafx.application.Application.launch
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.test.TestCoroutineScope
@@ -22,26 +20,30 @@ import java.util.stream.Stream
 
 class SplitChannelTest {
 
-    class SplitterSubscriber(val name: String, period: Long, timeUnit: TimeUnit) {
+    class SplitterSubscriber(
+            val name: String,
+            period: Long,
+            timeUnit: TimeUnit,
+            val source: ReceiveChannel<Int>,
+            coroutineScope: CoroutineScope) {
 
-        val seen: MutableList<Int>
-        val periodMillis: Long
+        val seen: MutableList<Int> = ArrayList()
+        val periodMillis: Long = timeUnit.toMillis(period)
 
         init {
-            seen = ArrayList()
-            periodMillis = timeUnit.toMillis(period)
+            coroutineScope.doSteps()
         }
 
         /*
          Periodically consume elements from upstream
          */
-        suspend fun doSteps(topic: ReceiveChannel<Int>) {
+        private fun CoroutineScope.doSteps() = launch {
 
             delay(periodMillis)
 
             log("requesting 1")
 
-            for (item in topic) {
+            for (item in source) {
 
                 log("got item: $item")
 
@@ -67,14 +69,11 @@ class SplitChannelTest {
 
         runBlocking(coroutineScope.coroutineContext) {
 
-            val fast = SplitterSubscriber("Fast!", 100, MILLISECONDS)
-            val slow = SplitterSubscriber("slow ", 1, SECONDS)
-
-            doSplittingStuff(fast, slow)
+            val subscribers = doSplittingStuff()
 
             delay(10_000L)
 
-            validate(fast, slow)
+            validate(subscribers)
         }
 
     }
@@ -96,22 +95,21 @@ class SplitChannelTest {
 
             pauseDispatcher {
 
-                val fast = SplitterSubscriber("Fast!", 100, MILLISECONDS)
-                val slow = SplitterSubscriber("slow ", 1, SECONDS)
-
-                doSplittingStuff(fast, slow)
+                val subscribers = doSplittingStuff()
 
                 runCurrent()
 
                 advanceTimeBy(MILLISECONDS.convert(10, SECONDS))
 
-                validate(fast, slow)
+                validate(subscribers)
             }
         }
 
     }
 
-    private fun validate(fast: SplitterSubscriber, slow: SplitterSubscriber) {
+    private fun validate(subscribers: Pair<SplitterSubscriber,SplitterSubscriber>) {
+        val(fast, slow) = subscribers
+
         /*
          Have to turn the stream into an iterable to compare it due to AssertJ 'cause
          https://github.com/joel-costigliola/assertj-core/issues/1545
@@ -126,9 +124,7 @@ class SplitChannelTest {
         return Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
     }
 
-    fun CoroutineScope.doSplittingStuff(
-            fast: SplitterSubscriber,
-            slow: SplitterSubscriber) {
+    fun CoroutineScope.doSplittingStuff(): Pair<SplitterSubscriber,SplitterSubscriber> {
 
         /*
 
@@ -147,11 +143,12 @@ class SplitChannelTest {
         val subscription1 = topic.openSubscription()
         val subscription2 = topic.openSubscription()
 
-        launch { fast.doSteps(subscription1) }
-
-        launch { slow.doSteps(subscription2) }
+        val fast = SplitterSubscriber("Fast!", 100, MILLISECONDS, subscription1, this)
+        val slow = SplitterSubscriber("slow ", 1, SECONDS, subscription2, this)
 
         launch { producer(topic) }
+
+        return Pair(fast,slow)
 
     }
 
