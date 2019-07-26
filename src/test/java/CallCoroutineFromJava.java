@@ -32,15 +32,12 @@ public class CallCoroutineFromJava {
       }
     });
 
+    contentProducer.setDaemon(true);
+    snapshotter.setDaemon(true);
+
     contentProducer.start();
     snapshotter.start();
 
     Thread.sleep(10_000);
-
-    contentProducer.interrupt();
-    snapshotter.interrupt();
-
-    contentProducer.join();
-    snapshotter.join();
   }
 }
