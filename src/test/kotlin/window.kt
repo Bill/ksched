@@ -26,9 +26,9 @@ fun <T> CoroutineScope.timeWindow(producer: ReceiveChannel<T>, delayMillis: Long
         select<Unit> {
             // <Unit> means that this select expression does not produce any result
 
-            producer.onReceive { value ->
+            producer.onReceive {
                 // this is the first select clause
-                seen.add(value)
+                seen.add(it)
             }
 
             ticker.onReceive {

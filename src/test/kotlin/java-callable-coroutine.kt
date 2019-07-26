@@ -8,7 +8,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 
 /**
- * This is a coroutine---similar to the one in deferred.kt
+ * This is a coroutine builder---similar to the one in deferred.kt
  * It's usable from other coroutines, but not so much from plain old Java code, since
  * you gotta communicate with it via channels and the interface to those is in terms
  * of suspend functions---not so handy from plain old Java.
@@ -68,36 +68,31 @@ class JavaCallableCoroutineScope(
         theCoroutine(submissionChannel, snapshotRequestChannel)
     }
 
+    // a fire-and-forget example
     fun submitStuff(stuff: String) = launch {
-        // fire and forget
         submissionChannel.send(stuff)
     }
 
-    fun snapshot() : Collection<String> {
-        // launch a coroutine to request and wait for the async result---return that result
-        return runBlocking {
-            val snapshotDeferred = CompletableDeferred<Collection<String>>()
+    /**
+     * a request-response example
+     * launch a coroutine to request and wait for the async result---return that result
+     */
+    fun snapshot(): Collection<String> = runBlocking {
+        with(CompletableDeferred<Collection<String>>()) {
             log2("sending snapshot request (deferred)")
-            snapshotRequestChannel.send(snapshotDeferred)
-            val snapshot = snapshotDeferred.await()
-            snapshot.also {
-                log2("got deferred snapshot value: $snapshot")
+            snapshotRequestChannel.send(this)
+            await().also {
+                log2("got deferred snapshot value: $it")
             }
         }
     }
 }
 
-/**
- * This is a coroutine builder. It's only purpose is to be an extension fn of
- * CoroutineScope, thereby making coroutineContext available, and to use that
- * coroutineContext to chain the created CoroutineScope (JavaCallableCoroutineScope)
- * into the structured concurrency, um, structure.
+/*
+ See Java class CallCoroutineFromJava for invocation from Java.
+
+ Compare those Java thread definitions to the Kotlin coroutines below.
  */
-fun CoroutineScope.javaCallableCoroutine() : JavaCallableCoroutineScope {
-    return JavaCallableCoroutineScope(coroutineContext)
-}
-
-
 fun main() = runBlocking {
 
     val jccs = JavaCallableCoroutineScope()
@@ -120,7 +115,7 @@ fun main() = runBlocking {
         }
     }
 
-    delay(10000)
+    delay(10_000)
 
     coroutineContext.cancelChildren()
 }
