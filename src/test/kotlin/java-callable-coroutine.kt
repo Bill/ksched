@@ -43,7 +43,6 @@ fun CoroutineScope.theCoroutine(
         }
     }
 
-
 /**
  * This is a class for handy access to theCoroutine from Java
  * It's a CoroutineScope so that its public functions have coroutine builders e.g.

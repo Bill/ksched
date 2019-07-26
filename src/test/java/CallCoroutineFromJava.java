@@ -1,4 +1,3 @@
-import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 
 import java.time.LocalDateTime;
@@ -10,28 +9,26 @@ public class CallCoroutineFromJava {
     final JavaCallableCoroutineScope jccs = new JavaCallableCoroutineScope();
 
     final Thread contentProducer = new Thread(() -> {
-      while(true) {
-        try {
+      try {
+        while (true) {
           sleep(10);
-        } catch (InterruptedException e) {
-          return;
+          final String content = LocalDateTime.now().toString();
+          DeferredKt.log2("sending content: " + content);
+          jccs.submitStuff(content);
         }
-        final String content = LocalDateTime.now().toString();
-        DeferredKt.log2("sending content: " + content);
-        jccs.submitStuff(content);
+      } catch (InterruptedException e) {
       }
     });
 
     final Thread snapshotter = new Thread(() -> {
-      while(true) {
-        try {
+      try {
+        while (true) {
           sleep(100);
-        } catch (InterruptedException e) {
-          return;
+          DeferredKt.log2("sending snapshot request (synchronously)");
+          final Collection<String> snapshot = jccs.snapshot();
+          DeferredKt.log2("got snapshot (synchronously): " + snapshot);
         }
-        DeferredKt.log2("sending snapshot request (synchronously)");
-        final Collection<String> snapshot = jccs.snapshot();
-        DeferredKt.log2("got snapshot (synchronously): " + snapshot);
+      } catch (InterruptedException e) {
       }
     });
 
