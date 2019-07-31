@@ -8,7 +8,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.selects.select
 
 @FunctionalInterface
-interface State {
+private interface State {
     /**
      * Process the first input from the channel(s) [perform a side-effect] and return a new functional.State
      */
@@ -22,7 +22,7 @@ interface State {
 
  "Type checking has run into a recursive problem..."
  */
-suspend fun locked(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): State =
+private suspend fun locked(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): State =
         select<State> {
             pushes.onReceive {
                 println("push blocked---functional.turnstile is functional.locked")
@@ -34,7 +34,7 @@ suspend fun locked(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): S
             }
         }
 
-suspend fun unlocked(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): State =
+private suspend fun unlocked(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): State =
         select<State> {
             pushes.onReceive {
                 println("Opened!")

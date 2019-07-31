@@ -1,4 +1,3 @@
-import functional.State
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
@@ -6,17 +5,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.selects.select
 
-@FunctionalInterface
-private interface State {
+sealed class State {
     /**
      * Process the first input from the channel(s) [perform a side-effect] and return a new functional.State
      */
-    suspend fun process(
+    abstract suspend fun process(
             pushes: ReceiveChannel<Unit>,
             coins: ReceiveChannel<Unit>): State
 }
 
-private object locked : State {
+private object locked : State() {
     override suspend fun process(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): State {
         return select<State> {
             pushes.onReceive {
@@ -31,7 +29,7 @@ private object locked : State {
     }
 }
 
-private object unlocked : State {
+private object unlocked : State() {
     override suspend fun process(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): State {
         return select<State> {
             pushes.onReceive {
