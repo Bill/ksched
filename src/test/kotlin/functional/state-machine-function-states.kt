@@ -21,6 +21,10 @@ private interface State {
  Must explicitly provide fun return type (State) otherwise ::locked ref causes compile error:
 
  "Type checking has run into a recursive problem..."
+
+ Interestingly, even without the explicit return-type declaration, the ::unlocked ref causes
+ no compile error. The problem seems to be in the recursion---the type of ::locked isn't known
+ when evaluating the expression after the = in the definition of ::locked.
  */
 private suspend fun locked(pushes: ReceiveChannel<Unit>, coins: ReceiveChannel<Unit>): State =
         select<State> {
